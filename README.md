@@ -1,5 +1,8 @@
 # savebackup
 
+> [!Warning]
+> Although extensively tested, prompted by me and in my own use, this is 100% coded by AI. Use with caution.
+
 A small Nintendo DS homebrew program that backs up the save files in a game folder on your
 flashcart's memory card. Start it from the flashcart menu: it copies the saves into `/backups/`
 on the same card, checks every copy, and keeps the newest 20 backups.
@@ -9,8 +12,8 @@ crash or switching off at the wrong moment can damage the card and take the save
 
 ## Using it
 
-1. Get `savebackup.nds`: build it (see below), or download it from the latest **Build and
-   test** run under *Actions* (needs a GitHub login).
+1. Download `savebackup.nds` from the latest release under *Releases*, or build it yourself
+   (see below).
 2. Copy it into the folder with your saves, for example `/games-gb/`. Keep the name
    `savebackup.nds` (see [How it finds the folder](#how-it-finds-the-folder)).
 3. Start it from the flashcart menu. Don't switch off while it shows *Don't switch off the DS!*
@@ -90,7 +93,9 @@ This compiles `source/main.c` for the PC with small stand-ins for the DS librari
 (`tests/stub/`) and runs it against a fake memory card. It checks which files are copied,
 finding the folder with and without help from the flashcart, skipping unchanged backups,
 keeping 20 backups, and a copy that fails. It needs bash and a C compiler, not BlocksDS.
-GitHub Actions runs the tests and builds `savebackup.nds` on every push.
+GitHub Actions runs the tests and builds `savebackup.nds` on every push, without storing the
+result. When a release is published, it builds `savebackup.nds` again and attaches it to the
+release together with `SHA256SUMS.txt`.
 
 ## Licence
 

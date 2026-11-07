@@ -1,12 +1,19 @@
 name: Build and test
 
+# Pushes and pull requests only test and build; nothing is stored. A published release gets
+# savebackup.nds and its checksum attached as release files.
 on:
   push:
   pull_request:
   workflow_dispatch:
+  release:
+    types: [published]
 
 permissions:
   contents: read
+
+env:
+  BLOCKSDS_IMAGE: skylyrac/blocksds:slim-v1.25.0@sha256:c5f19b95d9c2f312e6a68ea244d2ed5120203b4b82af9785937a349096f8e5e4
 
 jobs:
   test:
@@ -17,22 +24,28 @@ jobs:
         run: bash tests/run_tests.sh
 
   build:
+    if: github.event_name != 'release'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - name: Build savebackup.nds
+        run: docker run --rm --volume "$GITHUB_WORKSPACE:/work" --workdir /work "$BLOCKSDS_IMAGE" make
+
+  release:
+    if: github.event_name == 'release'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # to add files to the release
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build savebackup.nds
+        run: docker run --rm --volume "$GITHUB_WORKSPACE:/work" --workdir /work "$BLOCKSDS_IMAGE" make
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
         run: |
-          docker run --rm \
-            --volume "$GITHUB_WORKSPACE:/work" \
-            --workdir /work \
-            skylyrac/blocksds:slim-v1.25.0@sha256:c5f19b95d9c2f312e6a68ea244d2ed5120203b4b82af9785937a349096f8e5e4 \
-            make
           sha256sum savebackup.nds > SHA256SUMS.txt
-      - name: Upload savebackup.nds
-        uses: actions/upload-artifact@v7
-        with:
-          name: savebackup-${{ github.sha }}
-          path: |
-            savebackup.nds
-            SHA256SUMS.txt
-          if-no-files-found: error
+          # Keep the name savebackup.nds: the program looks for that name on the card.
+          gh release upload "$TAG" savebackup.nds SHA256SUMS.txt --clobber --repo "$GITHUB_REPOSITORY"
